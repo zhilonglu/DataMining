@@ -1,34 +1,33 @@
 #!/usr/bin/python
 # coding=utf-8
 from math import sqrt
-critics = {
-    'Lisa': {
-        'Lady in the water': 2.5,
-        'Snake on a plane': 3.5
-    },
-    'Tom': {
-        'Lady in the water': 3.0,
-        'Snake on a plane': 4.0
-    },
-    'Jerry': {
-        'Lady in the water': 2.0,
-        'Snake on a plane': 3.0
-    },
-    'WXM': {
-        'Lady in the water': 3.3,
-        'Snake on a plane': 4.2
-    },
-    'jhz': {
-        'Lady in the water': 3.9,
-        'Snake on a plane': 4.5
-    }
-}
+import numpy as np
+
+critics = {'Lisa Rose': {'Lady in the Water': 2.5, 'Snakes on a Plane': 3.5,
+                         'Just My Luck': 3.0, 'Superman Returns': 3.5, 'You, Me and Dupree': 2.5,
+                         'The Night Listener': 3.0},
+           'Gene Seymour': {'Lady in the Water': 3.0, 'Snakes on a Plane': 3.5,
+                            'Just My Luck': 1.5, 'Superman Returns': 5.0, 'The Night Listener': 3.0,
+                            'You, Me and Dupree': 3.5},
+           'Michael Phillips': {'Lady in the Water': 2.5, 'Snakes on a Plane': 3.0,
+                                'Superman Returns': 3.5, 'The Night Listener': 4.0},
+           'Claudia Puig': {'Snakes on a Plane': 3.5, 'Just My Luck': 3.0,
+                            'The Night Listener': 4.5, 'Superman Returns': 4.0,
+                            'You, Me and Dupree': 2.5},
+           'Mick LaSalle': {'Lady in the Water': 3.0, 'Snakes on a Plane': 4.0,
+                            'Just My Luck': 2.0, 'Superman Returns': 3.0, 'The Night Listener': 3.0,
+                            'You, Me and Dupree': 2.0},
+           'Jack Matthews': {'Lady in the Water': 3.0, 'Snakes on a Plane': 4.0,
+                             'The Night Listener': 3.0, 'Superman Returns': 5.0, 'You, Me and Dupree': 3.5},
+           'Toby': {'Snakes on a Plane': 4.5, 'You, Me and Dupree': 1.0, 'Superman Returns': 4.0}}
 
 """
 曼哈顿距离 计算相似度
 """
-def manhattan_dix(x,y):
-    return sum(abs(a-b) for a,b in zip(x,y))
+
+
+def manhattan_dix(x, y):
+    return sum(abs(a - b) for a, b in zip(x, y))
 
 
 """
@@ -44,8 +43,10 @@ def sim_distance(p1, p2):
     p = 1 / (1 + sqrt(sum_of_squares))
     return p
 
-def eculidSim1(x,y):
-    return sqrt(sum(pow(a-b,2) for a,b in zip(x,y)))
+
+def eculidSim1(x, y):
+    return sqrt(sum(pow(a - b, 2) for a, b in zip(x, y)))
+
 
 """
 明可夫斯基距离
@@ -55,10 +56,12 @@ def eculidSim1(x,y):
 当p==∞,“明可夫斯基距离”变成“切比雪夫距离”
 """
 
-def minkovski_dis(x,y,p):
-    sumvalue = sum(pow(abs(a-b),p) for a,b in zip(x,y))
-    mi = 1/float(p)
-    return round(sumvalue**mi,3)
+
+def minkovski_dis(x, y, p):
+    sumvalue = sum(pow(abs(a - b), p) for a, b in zip(x, y))
+    mi = 1 / float(p)
+    return round(sumvalue ** mi, 3)
+
 
 """
 皮尔逊相关度
@@ -76,16 +79,52 @@ def sim_distance_pearson(p1, p2):
     ss = sum([p1.get(sk) * p2.get(sk) for sk in c])
     n = len(c)
     num = ss - s1 * s2 / n
-    den = sqrt((sq1 - pow(s1, 2) / n) * (sq2 - pow(s2 - 2) / n))
+    den = sqrt((sq1 - pow(s1, 2) / n) * (sq2 - pow(s2 , 2) / n))
     if den == 0:
         return 0
     p = num / den
     return p
 
 
-"""
-Jaccard系数
-"""
+def sim_pearson(prefs, p1, p2):
+    # Get the list of mutually rated items
+    si = {}
+    for item in prefs[p1]:
+        if item in prefs[p2]:
+            si[item] = 1
+
+            # if they are no ratings in common, return 0
+    if len(si) == 0:
+        return 0
+
+        # Sum calculations
+    n = len(si)
+
+    # Sums of all the preferences
+    sum1 = sum([prefs[p1][it] for it in si])
+    sum2 = sum([prefs[p2][it] for it in si])
+
+    # Sums of the squares
+    sum1Sq = sum([pow(prefs[p1][it], 2) for it in si])
+    sum2Sq = sum([pow(prefs[p2][it], 2) for it in si])
+
+    # Sum of the products
+    pSum = sum([prefs[p1][it] * prefs[p2][it] for it in si])
+
+    # Calculate r (Pearson score)
+    num = pSum - (sum1 * sum2 / n)
+    den = sqrt((sum1Sq - pow(sum1, 2) / n) * (sum2Sq - pow(sum2, 2) / n))
+    if den == 0:
+        return 0
+
+    r = num / den
+
+    return r
+
+    """
+    Jaccard系数
+    主要用于计算符号度量或布尔值度量的个体间的相似度
+    """
 
 
 def sim_distance_jaccard(p1, p2):
@@ -97,6 +136,12 @@ def sim_distance_jaccard(p1, p2):
     sq2 = sum([pow(sk, 2) for sk in p2.values()])
     p = float(ss) / (sq1 + sq2 - ss)
     return p
+
+
+def jaccard_sim(x, y):
+    intersection_cardinality = len(set.intersection(*[set(x), set(y)]))
+    union_cardinality = len(set.union(*[set(x), set(y)]))
+    return intersection_cardinality / float(union_cardinality)
 
 
 """
@@ -113,6 +158,12 @@ def sim_distance_cos(p1, p2):
     sq2 = sqrt(sum([pow(p2.get(sk), 2) for sk in p2.keys()]))
     p = float(ss) / (sq1 * sq2)
     return p
+
+
+def cosine_dix(x, y):
+    num = sum(map(float, x * y))
+    denom = np.linalg.norm(x) * np.linalg.norm(y)
+    return round(num / float(denom), 3)
 
 
 """
@@ -155,8 +206,14 @@ def getRecommendations(prefs, person, similarity=sim_distance):
         rankings.sort()
         rankings.reverse()
         return rankings
+
+
 if __name__ == '__main__':
     # print(sim_distance_cos(critics['Lisa'],critics['Tom']))
     # print(eculidSim1([1,3,2,4],[2,5,3,1]))#3.87298334621
     # print(manhattan_dix([1,3,2,4],[2,5,3,1]))#7
-    print(minkovski_dis([0,3,4,5],[7,6,3,-1],3))#8.373
+    # print(minkovski_dis([0,3,4,5],[7,6,3,-1],3))#8.373
+    # print(cosine_dix(np.array([3,45,7,2]),np.array([2,54,13,15])))#0.972
+    # print(jaccard_sim([0, 1, 2, 5, 6], [0, 2, 3, 5, 7, 9]))  # 0.375
+    print(sim_pearson(critics, 'Lisa Rose', 'Gene Seymour'))
+    print(sim_distance_pearson(critics['Lisa Rose'], critics['Gene Seymour']))
